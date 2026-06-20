@@ -1,43 +1,61 @@
+import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 
-# ------------------------
-# DATABASE URL
-# ------------------------
-# Replace this with your real PostgreSQL credentials
-# Change 'username' to 'postgres' (or your custom PostgreSQL username)
-DATABASE_URL = "postgresql://postgres:KM183@localhost:5432/NexridgeTech"
+# -----------------------------------
 
+# DATABASE URL (Render or Local)
 
-# ------------------------
-# ENGINE
-# ------------------------
+# -----------------------------------
+
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+# Safety fallback for local development ONLY
+
+if not DATABASE_URL:
+DATABASE_URL = "sqlite:///./nexridge.db"
+
+# -----------------------------------
+
+# SQLALCHEMY ENGINE
+
+# -----------------------------------
+
 engine = create_engine(
-    DATABASE_URL,
-    pool_pre_ping=True,   # prevents stale DB connections
+DATABASE_URL,
+pool_pre_ping=True,
+echo=False
 )
-# ------------------------
-# SESSION
-# ------------------------
+
+# -----------------------------------
+
+# SESSION FACTORY
+
+# -----------------------------------
+
 SessionLocal = sessionmaker(
-    autocommit=False,
-    autoflush=False,
-    bind=engine
+autocommit=False,
+autoflush=False,
+bind=engine
 )
 
+# -----------------------------------
 
-# ------------------------
-# BASE CLASS (MODELS INHERIT THIS)
-# ------------------------
+# BASE MODEL
+
+# -----------------------------------
+
 Base = declarative_base()
 
+# -----------------------------------
 
-# ------------------------
-# DEPENDENCY (FASTAPI DB SESSION)
-# ------------------------
+# DEPENDENCY (FOR FASTAPI ROUTES)
+
+# -----------------------------------
+
 def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+db = SessionLocal()
+try:
+yield db
+finally:
+db.close()
