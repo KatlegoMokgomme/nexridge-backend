@@ -4,16 +4,16 @@ from fastapi.middleware.cors import CORSMiddleware
 import traceback
 
 # ------------------------
-# DATABASE (IMPORTANT)
+# DATABASE
 # ------------------------
 from app.core.database import Base, engine
 from app.models.ticket import Ticket
 from app.models.user import User
 
 # ------------------------
-# ROUTERS
+# ROUTERS (FIXED IMPORT PATH)
 # ------------------------
-from app.api.v1 import auth, tickets, dashboard, notifications
+from app.api import auth, tickets, dashboard, notifications
 
 # ------------------------
 # SCHEDULER
@@ -24,18 +24,20 @@ from app.core.scheduler import start_scheduler
 # CREATE APP
 # ------------------------
 app = FastAPI(
-    title="Ticket System API",
+    title="Nexridge Ticket System API",
     version="1.0.0"
 )
 
 # ------------------------
-# CORS CONFIGURATION (FIX FOR REACT)
+# CORS (REACT + ELECTRON SUPPORT)
 # ------------------------
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173",
-        "http://127.0.0.1:5173"
+        "http://127.0.0.1:5173",
+        "http://localhost",
+        "app://."
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -43,17 +45,27 @@ app.add_middleware(
 )
 
 # ------------------------
-# CREATE DATABASE TABLES (DEV ONLY)
+# CREATE TABLES (DEV ONLY)
 # ------------------------
 Base.metadata.create_all(bind=engine)
 
 # ------------------------
-# INCLUDE ROUTERS
+# REGISTER ROUTERS
 # ------------------------
 app.include_router(auth.router)
 app.include_router(tickets.router)
 app.include_router(dashboard.router)
 app.include_router(notifications.router)
+
+# ------------------------
+# ROOT HEALTH CHECK
+# ------------------------
+@app.get("/")
+def root():
+    return {
+        "message": "Nexridge API running successfully",
+        "status": "ok"
+    }
 
 # ------------------------
 # GLOBAL ERROR HANDLER
@@ -65,7 +77,10 @@ async def global_exception_handler(request: Request, exc: Exception):
 
     return JSONResponse(
         status_code=500,
-        content={"detail": str(exc)}
+        content={
+            "error": "Internal Server Error",
+            "detail": str(exc)
+        }
     )
 
 # ------------------------
