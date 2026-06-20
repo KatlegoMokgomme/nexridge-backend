@@ -13,7 +13,7 @@ from app.models.user import User
 # ------------------------
 # ROUTERS (FIXED IMPORT PATH)
 # ------------------------
-from app.api import auth, tickets, dashboard, notifications
+from app.api.v1 import auth, tickets, dashboard, notifications
 
 # ------------------------
 # SCHEDULER
