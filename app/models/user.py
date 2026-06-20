@@ -3,7 +3,7 @@ from app.core.database import Base
 
 
 class User(Base):
-    __tablename__ = "users"
+    __tablename__ = "users_v2"  # <-- Changed from "users"
 
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, index=True, nullable=False)
