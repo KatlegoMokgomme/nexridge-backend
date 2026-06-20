@@ -1,6 +1,6 @@
 import os
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy.orm import sessionmaker, DeclarativeBase
 
 # ------------------------
 # DATABASE URL (PRODUCTION SAFE)
@@ -20,8 +20,8 @@ if DATABASE_URL.startswith("postgres://"):
 # ------------------------
 engine = create_engine(
     DATABASE_URL,
-    pool_pre_ping=True,
-    echo=False
+    pool_pre_ping=True,  # Disconnect protection
+    echo=False           # Set to True if you want to see SQL queries in logs
 )
 
 # ------------------------
@@ -34,14 +34,23 @@ SessionLocal = sessionmaker(
 )
 
 # ------------------------
-# BASE MODEL
+# BASE MODEL (SQLAlchemy 2.0+ Style)
 # ------------------------
-Base = declarative_base()
+class Base(DeclarativeBase):
+    """
+    Subclass this Base to define your database models.
+    Provides better type-hinting and IDE auto-complete than declarative_base().
+    """
+    pass
 
 # ------------------------
 # DEPENDENCY (FASTAPI)
 # ------------------------
 def get_db():
+    """
+    FastAPI dependency injection to yield a database session per request
+    and ensure it is closed properly afterwards.
+    """
     db = SessionLocal()
     try:
         yield db
