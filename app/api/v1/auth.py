@@ -1,57 +1,48 @@
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
-
 from passlib.context import CryptContext
 
 from app.core.database import get_db
-from app.services.auth_service import login_user
 from app.models.user import User
 from app.core.security import create_access_token
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
-# ------------------------
-# PASSWORD HASHING
-# ------------------------
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
-# ========================
-# REGISTER USER
-# ========================
+# ------------------------
+# REGISTER (FIXED)
+# ------------------------
 @router.post("/register")
-def register(user_data: dict, db: Session = Depends(get_db)):
+def register(payload: dict, db: Session = Depends(get_db)):
 
-    # check if user exists
-    existing_user = db.query(User).filter(
-        User.username == user_data["username"]
+    user_exists = db.query(User).filter(
+        User.username == payload["username"]
     ).first()
 
-    if existing_user:
+    if user_exists:
         raise HTTPException(status_code=400, detail="User already exists")
 
-    # hash password
-    hashed_password = pwd_context.hash(user_data["password"])
+    hashed = pwd_context.hash(payload["password"])
 
-    new_user = User(
-        username=user_data["username"],
-        email=user_data["email"],
-        password=hashed_password
+    user = User(
+        username=payload["username"],
+        email=payload["email"],
+        password=hashed
     )
 
-    db.add(new_user)
+    db.add(user)
     db.commit()
-    db.refresh(new_user)
+    db.refresh(user)
 
-    return {
-        "message": "User created successfully"
-    }
+    return {"message": "User created"}
 
 
-# ========================
-# LOGIN (OAUTH2 STYLE)
-# ========================
+# ------------------------
+# LOGIN (FIXED)
+# ------------------------
 @router.post("/login")
 def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
@@ -65,14 +56,10 @@ def login(
     if not user:
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
-    # verify password
     if not pwd_context.verify(form_data.password, user.password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
-    # create JWT token
-    token = create_access_token(
-        data={"sub": str(user.id)}
-    )
+    token = create_access_token(data={"sub": str(user.id)})
 
     return {
         "access_token": token,
